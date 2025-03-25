@@ -35,13 +35,6 @@ func main() {
 	})
 	r.Use(c)
 
-	// Serve static files from the embedded "build" directory.
-	//staticFiles, err := fs.Sub(staticFS, "build")
-	//if err != nil {
-	//	panic(err)
-	//}
-
-	//r.StaticFS("/contactBook", http.FS(staticFiles))
 	r.Use(static.Serve("/", static.LocalFile("build", false)))
 
 	r.GET("/contacts", getContacts)
@@ -60,6 +53,7 @@ func main() {
 }
 
 type contact struct {
+	ID          int
 	FirstName   string
 	LastName    string
 	Street      string
@@ -74,13 +68,14 @@ type contact struct {
 func getContacts(c *gin.Context) {
 	var contacts []contact
 
-	res, err := db.Query("SELECT FirstName, LastName, Street, HouseNumber, ZipCode, City, Partner, Children, Email FROM Contacts")
+	res, err := db.Query("SELECT id, FirstName, LastName, Street, HouseNumber, ZipCode, City, Partner, Children, Email FROM Contacts")
 	if err != nil {
 		log.Println("Error occurred fetching data: contacts; ", err)
 	}
 
 	defer res.Close()
 	for res.Next() {
+		var id int
 		var FirstName string
 		var LastName string
 		var Street string
@@ -90,11 +85,12 @@ func getContacts(c *gin.Context) {
 		var Partner string
 		var Children string
 		var Email string
-		err := res.Scan(&FirstName, &LastName, &Street, &HouseNumber, &ZipCode, &City, &Partner, &Children, &Email)
+		err := res.Scan(&id, &FirstName, &LastName, &Street, &HouseNumber, &ZipCode, &City, &Partner, &Children, &Email)
 		if err != nil {
 			log.Println("Error occurred reading data: contacts; ", err)
 		}
 		contacts = append(contacts, contact{
+			ID:          id,
 			FirstName:   FirstName,
 			LastName:    LastName,
 			Street:      Street,
@@ -115,13 +111,52 @@ func getCsvExport(c *gin.Context) {
 }
 
 func createNewContact(c *gin.Context) {
+	var con contact
 
+	err := c.Bind(&con)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+
+	_, err = db.Exec("INSERT INTO Contacts (FirstName, LastName, Street, HouseNumber, ZipCode, City, Partner, Children, Email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", con.FirstName, con.LastName, con.Street, con.HouseNumber, con.ZipCode, con.City, con.Partner, con.Children, con.Email)
+	if err != nil {
+		log.Println("Couldn't insert contact: ", con.FirstName, "; err", err)
+		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
 func updateContact(c *gin.Context) {
+	var con contact
 
+	err := c.Bind(&con)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+
+	_, err = db.Exec("UPDATE Contacts SET FirstName = ?, LastName = ?, Street = ?, HouseNumber = ?, ZipCode = ?, City = ?, Partner = ?, Children = ?, Email = ? WHERE id = ?", con.FirstName, con.LastName, con.Street, con.HouseNumber, con.ZipCode, con.City, con.Partner, con.Children, con.Email, con.ID)
+	if err != nil {
+		log.Println("Couldn't update contact; ", err)
+		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
 func deleteContact(c *gin.Context) {
+	var con contact
 
+	err := c.Bind(&con)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+
+	_, err = db.Exec("DELETE FROM Contacts WHERE id = ?", con.ID)
+	if err != nil {
+		log.Println("Couldn't delete contact; ", err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true})
 }
