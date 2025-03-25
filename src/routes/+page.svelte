@@ -54,7 +54,52 @@
 				class="bg-gray-500 hover:bg-gray-600 text-white p-2 rounded-md"
 				aria-label="Print"
 				onclick={() => {
-					console.log("Print the data"); // TODO
+					let tableHtml = "<table>";
+					tableHtml += "<thead><tr><th>Vorname</th><th>Nachname</th><th>Straße</th><th>Hausnummer</th><th>Postleitzahl</th><th>Ort</th><th>Partner</th><th>Kinder</th><th>E-Mail</th></tr></thead>";
+					tableHtml += "<tbody>";
+					for (const item of contacts) {
+  				  tableHtml += `<tr><td>${item.FirstName}</td><td>${item.LastName}</td><td>${item.Street}</td<td>${item.HouseNumber}</td><td>${item.ZipCode}</td><td>${item.City}</td><td>${item.Partner}</td><td>${item.Children}</td><td>${item.Email}</td></tr>`;
+  				}
+					tableHtml += "</tbody></table>";
+  				const printWindow = window.open("", "_blank");
+  				if (printWindow) {
+  				  const doc = printWindow.document;
+  				  doc.head.innerHTML = `
+  				    <title>Kontakte</title>
+  				    <style>
+  				      table {
+  				        width: 100%;
+  				        border-collapse: collapse;
+  				        font-family: Arial, sans-serif;
+  				      }
+  				      th, td {
+  				        border: 1px solid #ddd;
+  				        padding: 8px;
+  				        text-align: left;
+  				      }
+  				      th {
+  				        background-color: #f0f0f0;
+  				        font-weight: bold;
+  				      }
+  				      tbody tr:nth-child(even) {
+  				        background-color: #f9f9f9;
+  				      }
+  				      @media print {
+  				        body {
+  				          font-size: 12pt;
+  				        }
+  				        table {
+  				          width: 100% !important;
+  				        }
+  				      }
+  				    </style>
+  				  `;
+  				  doc.body.innerHTML = tableHtml;
+  				  doc.close();
+  				  printWindow.print();
+  				} else {
+  				  alert("Konnte Druckfenster nicht öffnen.");
+  				}
 					}}>
 				<Print size={16} />
 			</button>
