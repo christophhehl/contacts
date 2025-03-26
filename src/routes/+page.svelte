@@ -58,7 +58,7 @@
 					tableHtml += "<thead><tr><th>Vorname</th><th>Nachname</th><th>Straße</th><th>Hausnummer</th><th>Postleitzahl</th><th>Ort</th><th>Partner</th><th>Kinder</th><th>E-Mail</th></tr></thead>";
 					tableHtml += "<tbody>";
 					for (const item of contacts) {
-  				  tableHtml += `<tr><td>${item.FirstName}</td><td>${item.LastName}</td><td>${item.Street}</td><td>${item.HouseNumber}</td><td>${item.ZipCode}</td><td>${item.City}</td><td>${item.Partner}</td><td>${item.Children}</td><td>${item.Email}</td></tr>`;
+  				  tableHtml += `<tr><td>${item.FirstName ? item.FirstName : "-"}</td><td>${item.LastName ? item.LastName : "-"}</td><td>${item.Street ? item.Street : "-"}</td><td>${item.HouseNumber ? item.HouseNumber : "-"}</td><td>${item.ZipCode ? item.ZipCode : "-"}</td><td>${item.City ? item.City : "-"}</td><td>${item.Partner ? item.Partner : "-"}</td><td>${item.Children ? item.Children : "-"}</td><td>${item.Email ? item.Email : "-"}</td></tr>`;
   				}
 					tableHtml += "</tbody></table>";
   				const printWindow = window.open("", "_blank");
@@ -107,13 +107,13 @@
 				class="bg-gray-500 hover:bg-gray-600 text-white p-2 rounded-md"
 				aria-label="exportToCSV"
 				onclick={() => {
-					axios.get('http://localhost:8080/csvExports', {responseType: "blob"}).then((response) => {
+					axios.get('http://localhost:8080/csvExport', {responseType: "blob"}).then((response) => {
 						console.log(response);
 						const blob = response.data;
 						const url = URL.createObjectURL(blob);
 						const a = document.createElement('a');
 						a.href = url;
-						a.download = 'CSV';
+						a.download = 'kontakte.csv';
 						document.body.appendChild(a);
 						a.click();
 						window.URL.revokeObjectURL(url);
@@ -164,45 +164,45 @@
 </div>
 
 <div class="flex flex-wrap gap-4 justify-center items-center pt-[74px]">
-	{#each contacts as contact (contact.ID)}
+	{#each contacts as contact, id (contact.ID)}
 		{#if valueInDictValues(contact, searchTerm)}
 			<div
 				class="relative card preset-outlined-primary-500 w-full max-w-md p-4 m-3 text-center grid grid-cols-3 gap-4">
 				<div class="relative">
 					<div class="text-[0.6rem] text-gray-500">Vorname</div>
-					<div class="text-base">{contact.FirstName}</div>
+					<div class="text-base">{contact.FirstName ? contact.FirstName : "-"}</div>
 				</div>
 				<div class="relative">
 					<div class="text-[0.6rem] text-gray-500">Nachname</div>
-					<div class="text-base">{contact.LastName}</div>
+					<div class="text-base">{contact.LastName ? contact.LastName : "-"}</div>
 				</div>
 				<div class="relative">
 					<div class="text-[0.6rem] text-gray-500">Partner</div>
-					<div class="text-base">{contact.Partner}</div>
+					<div class="text-base">{contact.Partner ? contact.Partner : "-"}</div>
 				</div>
 				<div class="col-span-2 relative">
 					<div class="text-[0.6rem] text-gray-500">Straße</div>
-					<div class="text-base">{contact.Street}</div>
+					<div class="text-base">{contact.Street ? contact.Street : "-"}</div>
 				</div>
 				<div class="relative">
 					<div class="text-[0.6rem] text-gray-500">Hausnummer</div>
-					<div class="text-base">{contact.HouseNumber}</div>
+					<div class="text-base">{contact.HouseNumber ? contact.HouseNumber : "-"}</div>
 				</div>
 				<div class="col-span-2 relative">
 					<div class="text-[0.6rem] text-gray-500">Ort</div>
-					<div class="text-base">{contact.City}</div>
+					<div class="text-base">{contact.City ? contact.City : "-"}</div>
 				</div>
 				<div class="relative">
 					<div class="text-[0.6rem] text-gray-500">Postleitzahl</div>
-					<div class="text-base">{contact.ZipCode}</div>
+					<div class="text-base">{contact.ZipCode ? contact.ZipCode : "-"}</div>
 				</div>
 				<div class="col-span-2 relative">
 					<div class="text-[0.6rem] text-gray-500">E-Mail</div>
-					<div class="text-base">{contact.Email}</div>
+					<div class="text-base">{contact.Email ? contact.Email : "-"}</div>
 				</div>
 				<div class="relative">
 					<div class="text-[0.6rem] text-gray-500">Kinder</div>
-					<div class="text-base">{contact.Children}</div>
+					<div class="text-base">{contact.Children ? contact.Children : "-"}</div>
 				</div>
 
 				<button
@@ -210,10 +210,9 @@
 					aria-label="editButton"
 					onclick={() => {
 						showEdit = true;
-						if (typeof contact.ID === 'number'){
-						editContact = contact.ID;
+						editContact = id;
 						}
-					}}>
+					}>
 					<Pen size={16} />
 				</button>
 			</div>
@@ -341,7 +340,7 @@
 				<div></div>
 				<button onclick={() => {
 					showNew = false;
-					axios.post("http://localhost:8080/newContact", JSON.stringify(newContact)).then(() => {
+					axios.post("http://localhost:8080/newContact", JSON.stringify($state.snapshot(newContact))).then(() => {
 						window.location.reload();})
 				}}
 								class="bg-primary-500 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded mr-2">
