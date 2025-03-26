@@ -6,8 +6,8 @@ import (
 	"embed"
 	"encoding/csv"
 	"fmt"
-	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
+	"io/fs"
 	"log"
 	"net/http"
 
@@ -38,7 +38,12 @@ func main() {
 	})
 	r.Use(c)
 
-	r.Use(static.Serve("/", static.LocalFile("build", false)))
+	fSys, err := fs.Sub(staticFS, "build")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	r.StaticFS("/static", http.FS(fSys))
 
 	r.GET("/contacts", getContacts)
 	r.GET("/csvExport", getCsvExport)
