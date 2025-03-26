@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"embed"
+	"encoding/csv"
+	"fmt"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"log"
@@ -107,16 +110,87 @@ func getContacts(c *gin.Context) {
 }
 
 func getCsvExport(c *gin.Context) {
+	var contacts []contact
 
+	res, err := db.Query("SELECT FirstName, LastName, Street, HouseNumber, ZipCode, City, Partner, Children, Email FROM Contacts")
+	if err != nil {
+		log.Println("Error occurred fetching data: contacts; ", err)
+	}
+
+	defer res.Close()
+	for res.Next() {
+		var FirstName string
+		var LastName string
+		var Street string
+		var HouseNumber string
+		var ZipCode string
+		var City string
+		var Partner string
+		var Children string
+		var Email string
+		err := res.Scan(&FirstName, &LastName, &Street, &HouseNumber, &ZipCode, &City, &Partner, &Children, &Email)
+		if err != nil {
+			log.Println("Error occurred reading data: contacts; ", err)
+		}
+		contacts = append(contacts, contact{
+			FirstName:   FirstName,
+			LastName:    LastName,
+			Street:      Street,
+			HouseNumber: HouseNumber,
+			ZipCode:     ZipCode,
+			City:        City,
+			Partner:     Partner,
+			Children:    Children,
+			Email:       Email,
+		})
+	}
+
+	csvFile := listToCSV(contacts)
+
+	c.Data(http.StatusOK, "text/csv", []byte(csvFile))
+}
+
+func listToCSV(contacts []contact) string {
+	var buf bytes.Buffer
+	writer := csv.NewWriter(&buf)
+
+	// Write the header row
+	header := []string{"Vorname", "Nachname", "Straße", "Hausnummer", "Postleitzahl", "Ort", "Partner", "Kinder", "E-Mail"}
+	if err := writer.Write(header); err != nil {
+		return ""
+	}
+
+	// Write the data rows
+	for _, contact := range contacts {
+		row := []string{
+			contact.FirstName,
+			contact.LastName,
+			contact.Street,
+			contact.HouseNumber,
+			contact.ZipCode,
+			contact.City,
+			contact.Partner,
+			contact.Children,
+			contact.Email,
+		}
+		if err := writer.Write(row); err != nil {
+			return ""
+		}
+	}
+
+	writer.Flush()
+	return buf.String()
 }
 
 func createNewContact(c *gin.Context) {
 	var con contact
 
-	err := c.Bind(&con)
+	err := c.BindJSON(&con)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
+
+	fmt.Println(con)
 
 	_, err = db.Exec("INSERT INTO Contacts (FirstName, LastName, Street, HouseNumber, ZipCode, City, Partner, Children, Email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", con.FirstName, con.LastName, con.Street, con.HouseNumber, con.ZipCode, con.City, con.Partner, con.Children, con.Email)
 	if err != nil {
@@ -130,7 +204,7 @@ func createNewContact(c *gin.Context) {
 func updateContact(c *gin.Context) {
 	var con contact
 
-	err := c.Bind(&con)
+	err := c.BindJSON(&con)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
@@ -147,7 +221,7 @@ func updateContact(c *gin.Context) {
 func deleteContact(c *gin.Context) {
 	var con contact
 
-	err := c.Bind(&con)
+	err := c.BindJSON(&con)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
