@@ -71,12 +71,15 @@ type contact struct {
 	Partner     string
 	Children    string
 	Email       string
+	Landline    string
+	MobilePhone string
+	Birthday    string
 }
 
 func getContacts(c *gin.Context) {
 	var contacts []contact
 
-	res, err := db.Query("SELECT id, FirstName, LastName, Street, HouseNumber, ZipCode, City, Partner, Children, Email FROM Contacts")
+	res, err := db.Query("SELECT id, FirstName, LastName, Street, HouseNumber, ZipCode, City, Partner, Children, Email, Landline, MobilePhone, Birthday FROM Contacts")
 	if err != nil {
 		log.Println("Error occurred fetching data: contacts; ", err)
 	}
@@ -93,7 +96,10 @@ func getContacts(c *gin.Context) {
 		var Partner string
 		var Children string
 		var Email string
-		err := res.Scan(&id, &FirstName, &LastName, &Street, &HouseNumber, &ZipCode, &City, &Partner, &Children, &Email)
+		var Landline string
+		var MobilePhone string
+		var Birthday string
+		err := res.Scan(&id, &FirstName, &LastName, &Street, &HouseNumber, &ZipCode, &City, &Partner, &Children, &Email, &Landline, &MobilePhone, &Birthday)
 		if err != nil {
 			log.Println("Error occurred reading data: contacts; ", err)
 		}
@@ -108,6 +114,9 @@ func getContacts(c *gin.Context) {
 			Partner:     Partner,
 			Children:    Children,
 			Email:       Email,
+			Landline:    Landline,
+			MobilePhone: MobilePhone,
+			Birthday:    Birthday,
 		})
 	}
 
@@ -117,7 +126,7 @@ func getContacts(c *gin.Context) {
 func getCsvExport(c *gin.Context) {
 	var contacts []contact
 
-	res, err := db.Query("SELECT FirstName, LastName, Street, HouseNumber, ZipCode, City, Partner, Children, Email FROM Contacts")
+	res, err := db.Query("SELECT FirstName, LastName, Street, HouseNumber, ZipCode, City, Partner, Children, Email, Landline, MobilePhone, Birthday FROM Contacts")
 	if err != nil {
 		log.Println("Error occurred fetching data: contacts; ", err)
 	}
@@ -133,7 +142,10 @@ func getCsvExport(c *gin.Context) {
 		var Partner string
 		var Children string
 		var Email string
-		err := res.Scan(&FirstName, &LastName, &Street, &HouseNumber, &ZipCode, &City, &Partner, &Children, &Email)
+		var Landline string
+		var MobilePhone string
+		var Birthday string
+		err := res.Scan(&FirstName, &LastName, &Street, &HouseNumber, &ZipCode, &City, &Partner, &Children, &Email, &Landline, &MobilePhone, &Birthday)
 		if err != nil {
 			log.Println("Error occurred reading data: contacts; ", err)
 		}
@@ -147,6 +159,9 @@ func getCsvExport(c *gin.Context) {
 			Partner:     Partner,
 			Children:    Children,
 			Email:       Email,
+			Landline:    Landline,
+			MobilePhone: MobilePhone,
+			Birthday:    Birthday,
 		})
 	}
 
@@ -160,7 +175,7 @@ func listToCSV(contacts []contact) string {
 	writer := csv.NewWriter(&buf)
 
 	// Write the header row
-	header := []string{"Vorname", "Nachname", "Straße", "Hausnummer", "Postleitzahl", "Ort", "Partner", "Kinder", "E-Mail"}
+	header := []string{"Vorname", "Nachname", "Straße", "Hausnummer", "Postleitzahl", "Ort", "Partner", "Kinder", "E-Mail", "Festnetz", "Handynummer", "Geburtstag"}
 	if err := writer.Write(header); err != nil {
 		return ""
 	}
@@ -177,6 +192,9 @@ func listToCSV(contacts []contact) string {
 			contact.Partner,
 			contact.Children,
 			contact.Email,
+			contact.Landline,
+			contact.MobilePhone,
+			contact.Birthday,
 		}
 		if err := writer.Write(row); err != nil {
 			return ""
@@ -197,7 +215,7 @@ func createNewContact(c *gin.Context) {
 
 	fmt.Println(con)
 
-	_, err = db.Exec("INSERT INTO Contacts (FirstName, LastName, Street, HouseNumber, ZipCode, City, Partner, Children, Email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", con.FirstName, con.LastName, con.Street, con.HouseNumber, con.ZipCode, con.City, con.Partner, con.Children, con.Email)
+	_, err = db.Exec("INSERT INTO Contacts (FirstName, LastName, Street, HouseNumber, ZipCode, City, Partner, Children, Email, Landline, MobilePhone, Birthday) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", con.FirstName, con.LastName, con.Street, con.HouseNumber, con.ZipCode, con.City, con.Partner, con.Children, con.Email, con.Landline, con.MobilePhone, con.Birthday)
 	if err != nil {
 		log.Println("Couldn't insert contact: ", con.FirstName, "; err", err)
 		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
@@ -214,7 +232,7 @@ func updateContact(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
 
-	_, err = db.Exec("UPDATE Contacts SET FirstName = ?, LastName = ?, Street = ?, HouseNumber = ?, ZipCode = ?, City = ?, Partner = ?, Children = ?, Email = ? WHERE id = ?", con.FirstName, con.LastName, con.Street, con.HouseNumber, con.ZipCode, con.City, con.Partner, con.Children, con.Email, con.ID)
+	_, err = db.Exec("UPDATE Contacts SET FirstName = ?, LastName = ?, Street = ?, HouseNumber = ?, ZipCode = ?, City = ?, Partner = ?, Children = ?, Email = ?, Landline = ?, MobilePhone = ?, Birthday = ? WHERE id = ?", con.FirstName, con.LastName, con.Street, con.HouseNumber, con.ZipCode, con.City, con.Partner, con.Children, con.Email, con.Landline, con.MobilePhone, con.Birthday, con.ID)
 	if err != nil {
 		log.Println("Couldn't update contact; ", err)
 		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
